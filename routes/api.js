@@ -23,20 +23,36 @@ prisma.$connect().then(() => {
 // Create a new record for the configured model
 // This is the 'C' of CRUD
 router.post('/data', async (req, res) => {
-    try {
-        // Remove the id field from request body if it exists
-        // MongoDB will auto-generate an ID for new records
-        const { id, ...createData } = req.body
+  try {
+    const { id, ...body } = req.body
 
-        const created = await prisma[model].create({
-            data: createData
-        })
-        res.status(201).send(created)
-    } catch (err) {
-        console.error('POST /data error:', err)
-        res.status(500).send({ error: 'Failed to create record', details: err.message || err })
+    // Build a clean data object with the exact fields Prisma expects
+    const data = {
+      date: body.date ? new Date(body.date) : null,
+      workoutName: body.workoutName || null,
+      workoutType: body.workoutType || '',          // non-nullable in schema
+      sets: body.sets ?? null,
+      reps: body.reps ?? null,
+      minuteDuration:
+        body.minuteDuration != null ? Number(body.minuteDuration) : 0,
+      moodBefore: body.moodBefore ?? null,
+      moodAfter: body.moodAfter ?? null,
+      notes: body.notes || null,
+      createdOn: new Date(),                        // stamp when created
     }
+
+    console.log('Creating workout with data:', data)
+
+    const created = await prisma.workout.create({ data })
+    res.status(201).json(created)
+  } catch (err) {
+    console.error('POST /data error:', err)
+    res
+      .status(500)
+      .json({ error: 'Failed to create workout', details: String(err) })
+  }
 })
+
 
 
 // ----- READ (GET) list ----- 
