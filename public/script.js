@@ -372,7 +372,13 @@ createButton.addEventListener('click', () => {
     console.log('Create button clicked');
   myForm.reset();
   formHeading.textContent = 'Log a Workout';
-  formPopover.showPopover();
+
+  if (typeOf formPopover.showPopover === 'function'){
+formPopover.showPopover();
+  }
+    else {
+        formPopover.setAttribute('open', 'true');
+    }
 });
 
 // Filter controls
