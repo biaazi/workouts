@@ -1,4 +1,6 @@
 console.log('script.js loaded');
+document.addEventListener('DOMContentLoaded', () => {
+
 
 let readyStatus = document.querySelector('#readyStatus');
 let notReadyStatus = document.querySelector('#notReadyStatus');
@@ -15,6 +17,8 @@ let clearFiltersBtn = document.querySelector('#clearFilters');
 let summaryCount = document.querySelector('#summaryCount');
 let summaryDuration = document.querySelector('#summaryDuration');
 let summaryMood = document.querySelector('#summaryMood');
+let cancelButton = myForm.querySelector('.cancel');
+
 
 // keep fetched workouts in memory for filtering
 let workouts = [];
@@ -40,15 +44,20 @@ const getFormData = () => {
   return json;
 };
 
-// Handle form submissions (Create / Update)
 myForm.addEventListener('submit', async event => {
   event.preventDefault();
   const data = getFormData();
+  console.log('Form submitted with data:', data);
+
   await saveItem(data);
   myForm.reset();
   formHeading.textContent = 'Log a Workout';
-  formPopover.hidePopover();
+
+  if (formPopover) {
+    formPopover.style.display = 'none';
+  }
 });
+
 
 // Save item (Create or Update)
 const saveItem = async (data) => {
@@ -370,16 +379,23 @@ myForm.addEventListener('reset', () => {
 // Create button: reset + open form
 createButton.addEventListener('click', () => {
     console.log('Create button clicked');
-  myForm.reset();
-  formHeading.textContent = 'Log a Workout';
-
-  if (typeOf formPopover.showPopover === 'function'){
-formPopover.showPopover();
-  }
-    else {
-        formPopover.setAttribute('open', 'true');
-    }
+    myForm.reset();
+    formHeading.textContent = 'Log a Workout';
+    formPopover.style.display = 'block';
 });
+
+// Cancel button closes popover
+let cancelButton = myForm.querySelector('.cancel');
+if (cancelButton) {
+  cancelButton.addEventListener('click', () => {
+    console.log('Cancel clicked');
+    if (formPopover) {
+      formPopover.style.display = 'none';
+    }
+  });
+}
+
+
 
 // Filter controls
 if (filterType) {
@@ -398,3 +414,4 @@ if (clearFiltersBtn) {
 
 // Load initial data
 getData();
+});

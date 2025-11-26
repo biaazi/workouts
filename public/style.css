@@ -512,6 +512,7 @@ select {
   padding: 0;
   border: none;
   background: transparent;
+  display: none;
 }
 
 #formPopover::backdrop {
