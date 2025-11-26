@@ -272,7 +272,7 @@ const getData = async () => {
 }
 
 // Revert to the default form title on reset
-myForm.addEventListener('reset', () => formHeading.textContent = '🐈 Share a Cat')
+myForm.addEventListener('reset', () => formHeading.textContent = 'Share a Workout Session')
 
 // Reset the form when the create button is clicked. 
 createButton.addEventListener('click', myForm.reset())

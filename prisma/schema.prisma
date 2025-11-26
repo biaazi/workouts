@@ -18,6 +18,6 @@ model workout {
   moodBefore      Int?
   moodAfter    Int?
   notes       String?
-  createdOn   DateTime @db.Date
+  createdOn   DateTime? @db.Date
   
 }
