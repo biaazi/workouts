@@ -47,14 +47,14 @@
   <button
     id="createButton"
     popovertarget="formPopover"
-  >Create New Cat</button>
+  >Log New Workout</button>
 
   <div
     id="formPopover"
     popover
   >
-    <h2>🐈 Share a Cat</h2>
-    <p>Share your kitty with the community</p>
+    <h2>Log a Workout</h2>
+    <p>Track how you moved and felt</p>
     <form id="myForm">
       <!-- Hidden field to store ID for updates -->
       <input
@@ -64,16 +64,15 @@
       />
 
       <fieldset>
-        <label for="name">Cat Name</label>
+        <label for="date">Date</label>
         <input
           required
-          type="text"
-          name="name"
-          id="name"
-          placeholder="e.g. Sofia"
+          type="date"
+          name="date"
+          id="date"
           autocomplete="off"
         />
-        <small class="validation">Name is required</small>
+        <small class="validation">Date is required</small>
       </fieldset>
 
       <fieldset>
