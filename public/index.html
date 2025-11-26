@@ -76,12 +76,27 @@
       </fieldset>
 
       <fieldset>
-        <label for="birthDate">Birth Date</label>
+        <label for="workoutName">Exercise Name</label>
+        <small>e.g. Lat Pulldown, Glute Kickback, Preacher Curl</small>
         <input
-          type="date"
-          name="birthDate"
-          id="birthDate"
+          type="text"
+          name="workoutName"
+          id="workoutName"
+          placeholder="e.g. Tricep Pushdown"
         />
+
+      <fieldset>
+        <label for="workoutType">Workout Type</label>
+        <select
+        name="workoutType"
+        id="workoutType"
+        >
+      <option value="" disabled selected>Select a Workout</option>
+      <option value="Upper Body">Upper Body</option>
+      <option value="Lower Body">Lower Body</option>
+      <option value="Cardio">Cardio</option>
+      <option value="Full Body">Full Body</option>
+    </select>
       </fieldset>
 
       <fieldset>
