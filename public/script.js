@@ -1,281 +1,391 @@
-let readyStatus = document.querySelector('#readyStatus')
-let notReadyStatus = document.querySelector('#notReadyStatus')
-let myForm = document.querySelector('#myForm')
-let contentArea = document.querySelector('#contentArea')
-let formPopover = document.querySelector('#formPopover')
-let createButton = document.querySelector('#createButton')
-let formHeading = document.querySelector('#formPopover h2')
+let readyStatus = document.querySelector('#readyStatus');
+let notReadyStatus = document.querySelector('#notReadyStatus');
+let myForm = document.querySelector('#myForm');
+let contentArea = document.querySelector('#contentArea');
+let formPopover = document.querySelector('#formPopover');
+let createButton = document.querySelector('#createButton');
+let formHeading = document.querySelector('.form-header h2');
 
-// Get form data and process each type of input
-// Prepare the data as JSON with a proper set of types
-// e.g. Booleans, Numbers, Dates
+let filterType = document.querySelector('#filterType');
+let filterMood = document.querySelector('#filterMood');
+let clearFiltersBtn = document.querySelector('#clearFilters');
+
+let summaryCount = document.querySelector('#summaryCount');
+let summaryDuration = document.querySelector('#summaryDuration');
+let summaryMood = document.querySelector('#summaryMood');
+
+// keep fetched workouts in memory for filtering
+let workouts = [];
+
+// Convert form data into JSON with correct types
 const getFormData = () => {
-    // FormData gives a baseline representation of the form
-    // with all fields represented as strings
-    const formData = new FormData(myForm)
-    const json = Object.fromEntries(formData)
+  const formData = new FormData(myForm);
+  const json = Object.fromEntries(formData);
 
-    // Handle checkboxes, dates, and numbers
-    myForm.querySelectorAll('input').forEach(el => {
-        const value = json[el.name]
-        const isEmpty = !value || value.trim() === ''
+  myForm.querySelectorAll('input').forEach(el => {
+    const value = json[el.name];
+    const isEmpty = value === undefined || value === null || value.toString().trim() === '';
 
-        // Represent checkboxes as a Boolean value (true/false)
-        if (el.type === 'checkbox') {
-            json[el.name] = el.checked
-        }
-        // Represent number and range inputs as actual numbers
-        else if (el.type === 'number' || el.type === 'range') {
-            json[el.name] = isEmpty ? null : Number(value)
-        }
-        // Represent all date inputs in ISO-8601 DateTime format
-        else if (el.type === 'date') {
-            json[el.name] = isEmpty ? null : new Date(value).toISOString()
-        }
-    })
-    return json
-}
+    if (el.type === 'checkbox') {
+      json[el.name] = el.checked;
+    } else if (el.type === 'number' || el.type === 'range') {
+      json[el.name] = isEmpty ? null : Number(value);
+    } else if (el.type === 'date') {
+      json[el.name] = isEmpty ? null : new Date(value).toISOString();
+    }
+  });
 
+  return json;
+};
 
-// listen for form submissions  
+// Handle form submissions (Create / Update)
 myForm.addEventListener('submit', async event => {
-    // prevent the page from reloading when the form is submitted.
-    event.preventDefault()
-    const data = getFormData()
-    await saveItem(data)
-    myForm.reset()
-    formPopover.hidePopover()
-})
-
+  event.preventDefault();
+  const data = getFormData();
+  await saveItem(data);
+  myForm.reset();
+  formHeading.textContent = 'Log a Workout';
+  formPopover.hidePopover();
+});
 
 // Save item (Create or Update)
 const saveItem = async (data) => {
-    console.log('Saving:', data)
+  const endpoint = data.id ? `/data/${data.id}` : '/data';
+  const method = data.id ? 'PUT' : 'POST';
 
-    // Determine if this is an update or create
-    const endpoint = data.id ? `/data/${data.id}` : '/data'
-    const method = data.id ? "PUT" : "POST"
+  const options = {
+    method,
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  };
 
-    const options = {
-        method: method,
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
+  try {
+    const response = await fetch(endpoint, options);
+
+    if (!response.ok) {
+      try {
+        const errorData = await response.json();
+        console.error('Error:', errorData);
+        alert(errorData.error || response.statusText);
+      } catch (err) {
+        console.error(response.statusText);
+        alert('Failed to save: ' + response.statusText);
+      }
+      return;
     }
 
-    try {
-        const response = await fetch(endpoint, options)
+    const result = await response.json();
+    console.log('Saved:', result);
 
-        if (!response.ok) {
-            try {
-                const errorData = await response.json()
-                console.error('Error:', errorData)
-                alert(errorData.error || response.statusText)
-            }
-            catch (err) {
-                console.error(response.statusText)
-                alert('Failed to save: ' + response.statusText)
-            }
-            return
-        }
-
-        const result = await response.json()
-        console.log('Saved:', result)
-
-
-        // Refresh the data list
-        getData()
-    }
-    catch (err) {
-        console.error('Save error:', err)
-        alert('An error occurred while saving')
-    }
-}
-
+    // Refresh the data list
+    getData();
+  } catch (err) {
+    console.error('Save error:', err);
+    alert('An error occurred while saving');
+  }
+};
 
 // Edit item - populate form with existing data
 const editItem = (data) => {
-    console.log('Editing:', data)
+  console.log('Editing:', data);
 
-    // Populate the form with data to be edited
-    Object.keys(data).forEach(field => {
-        const element = myForm.elements[field]
-        if (element) {
-            if (element.type === 'checkbox') {
-                element.checked = data[field]
-            } else if (element.type === 'date') {
-                // Extract yyyy-mm-dd from ISO date string (avoids timezone issues)
-                element.value = data[field] ? data[field].substring(0, 10) : ''
-            } else {
-                element.value = data[field]
-            }
-        }
-    })
+  Object.keys(data).forEach(field => {
+    const element = myForm.elements[field];
+    if (!element) return;
 
-    // Update the heading to indicate edit mode
-    formHeading.textContent = 'Edit Workout'
+    if (element.type === 'checkbox') {
+      element.checked = !!data[field];
+    } else if (element.type === 'date') {
+      element.value = data[field] ? data[field].substring(0, 10) : '';
+    } else {
+      element.value = data[field] ?? '';
+    }
+  });
 
-    // Show the popover
-    formPopover.showPopover()
-}
+  formHeading.textContent = 'Edit Workout';
+  formPopover.showPopover();
+};
 
 // Delete item
 const deleteItem = async (id) => {
-    if (!confirm('Confirm workout deletion?')) {
-        return
+  if (!confirm('Confirm workout deletion?')) {
+    return;
+  }
+
+  const endpoint = `/data/${id}`;
+  const options = { method: 'DELETE' };
+
+  try {
+    const response = await fetch(endpoint, options);
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Deleted:', result);
+      getData();
+    } else {
+      const errorData = await response.json();
+      alert(errorData.error || 'Failed to delete item');
     }
+  } catch (error) {
+    console.error('Delete error:', error);
+    alert('An error occurred while deleting');
+  }
+};
 
-    const endpoint = `/data/${id}`
-    const options = { method: "DELETE" }
+// Date pill helper
+const datePill = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  const month = d.toLocaleString('en-CA', { month: 'short' });
+  const day = d.toLocaleString('en-CA', { day: '2-digit' });
+  const year = d.toLocaleString('en-CA', { year: 'numeric' });
 
-    try {
-        const response = await fetch(endpoint, options)
+  return `
+    <div class="date-pill">
+      <span class="date-day">${day}</span>
+      <span class="date-month">${month}</span>
+      <span class="date-year">${year}</span>
+    </div>
+  `;
+};
 
-        if (response.ok) {
-            const result = await response.json()
-            console.log('Deleted:', result)
-            // Refresh the data list
-            getData()
-        }
-        else {
-            const errorData = await response.json()
-            alert(errorData.error || 'Failed to delete item')
-        }
-    } catch (error) {
-        console.error('Delete error:', error)
-        alert('An error occurred while deleting')
-    }
-}
+// Mood delta text
+const getMoodDeltaText = (before, after) => {
+  if (before == null || after == null) return null;
+  const delta = after - before;
 
+  if (delta > 0) return { text: `Mood improved by +${delta}`, type: 'positive' };
+  if (delta < 0) return { text: `Mood decreased by ${delta}`, type: 'negative' };
+  return { text: 'Mood stayed the same', type: 'neutral' };
+};
 
-const calendarWidget = (date) => {
-    if (!date) return ''
-    const month = new Date(date).toLocaleString("en-CA", { month: 'short', timeZone: "UTC" })
-    const day = new Date(date).toLocaleString("en-CA", { day: '2-digit', timeZone: "UTC" })
-    const year = new Date(date).toLocaleString("en-CA", { year: 'numeric', timeZone: "UTC" })
-    return ` <div class="calendar">
-                <div class="born"><img src="./assets/birthday.svg" /></div>
-                <div class="month">${month}</div>
-                <div class="day">${day}</div> 
-                <div class="year">${year}</div>
-            </div>`
-
-}
-
-// Render a single item
+// Render a single workout card
 const renderItem = (item) => {
-    const div = document.createElement('div')
-    div.classList.add('item-card')
-    div.setAttribute('data-id', item.id)
+  const div = document.createElement('div');
+  div.classList.add('item-card');
+  div.setAttribute('data-id', item.id);
 
-    const template = /*html*/`  
-    <div class="item-heading">
-        <h3> ${item.name} </h3>
-        <div class="microchip-info">
-            <img src="./assets/chip.svg" /> ${item.microchip || '<i>???</i>'} 
-        </div>  
-    </div>
-    <div class="item-info"> 
-        <div class="item-icon" style="
-            background: linear-gradient(135deg, 
-            ${item.primaryColor} 0%, 
-            ${item.primaryColor} 40%, 
-            ${item.secondaryColor} 60%, 
-            ${item.secondaryColor} 100%); 
-        ">
-        </div> 
-        <div class="stats">
-            <div class="stat">
-                <span>Playfulness</span>
-                <meter max="10" min="0" value="${item.playfulness || 0}"></meter> 
-            </div>
-            <div class="stat">
-                <span>Appetite</span>
-                <meter max="10" min="0" value="${item.appetite || 0}"></meter> 
-            </div>
-        </div> 
-            
-         ${calendarWidget(item.birthDate)}
-    </div>
-        
-    <div class="item-info">  
-        <section class="breed" style="${item.breed ? '' : 'display:none;'}">  
-            <img src="./assets/ribbon.svg" />  ${item.breed}
-        </section>
-        <section class="food" style="${item.food ? '' : 'display:none;'}">
-             <img src="./assets/${item.food}.svg" /> <span>${item.food} food</span>
-        </section> 
-        <section class="adoption">
-            <img src="./assets/${item.isAdopted ? 'adopted' : 'paw'}.svg" />
-            ${item.isAdopted ? 'Adopted' : 'Available'}
-        </section> 
-    </div>
+  const durationText = item.minuteDuration != null
+    ? `${item.minuteDuration} min`
+    : '–';
 
-    <section class="description" style="${item.description ? '' : 'display:none;'}">  
-        <p>${item.description}</p>
-    </section>
+  let setsRepsText = '–';
+  if (item.sets && item.reps) {
+    setsRepsText = `${item.sets} × ${item.reps}`;
+  } else if (item.sets || item.reps) {
+    const s = item.sets ? `${item.sets} sets` : '';
+    const r = item.reps ? `${item.reps} reps` : '';
+    setsRepsText = [s, r].filter(Boolean).join(' ');
+  }
 
-        
-           
-        <div class="item-actions">
-            <button class="edit-btn">Edit</button>
-            <button class="delete-btn">Delete</button>
+  const moodBefore = item.moodBefore ?? null;
+  const moodAfter = item.moodAfter ?? null;
+  const moodDelta = getMoodDeltaText(moodBefore, moodAfter);
+
+  const workoutName = item.workoutName || 'Untitled workout';
+  const workoutType = item.workoutType || 'Uncategorized';
+
+  const notes = item.notes ? item.notes : '';
+
+  const template = /*html*/`
+    <div class="item-main">
+      <div class="item-header">
+        <h3>${DOMPurify.sanitize(workoutName)}</h3>
+        <span class="workout-type-pill">${DOMPurify.sanitize(workoutType)}</span>
+      </div>
+      <p class="item-subline">
+        Duration · ${durationText}
+        ${setsRepsText !== '–' ? ` · Sets × Reps · ${setsRepsText}` : ''}
+      </p>
+      <div class="item-stats-row">
+        <div class="chip">
+          <span class="chip-label">Mood</span>
+          <span class="chip-value">
+            ${moodBefore != null ? moodBefore : '–'}
+            →
+            ${moodAfter != null ? moodAfter : '–'}
+          </span>
         </div>
-    `
-    div.innerHTML = DOMPurify.sanitize(template);
+        <div class="chip">
+          <span class="chip-label">Intensity</span>
+          <span class="chip-value">${setsRepsText}</span>
+        </div>
+        ${moodDelta
+          ? `<div class="chip mood-delta">
+                <span class="chip-value">${DOMPurify.sanitize(moodDelta.text)}</span>
+             </div>`
+          : ''}
+      </div>
+    </div>
 
-    // Add event listeners to buttons
-    div.querySelector('.edit-btn').addEventListener('click', () => editItem(item))
-    div.querySelector('.delete-btn').addEventListener('click', () => deleteItem(item.id))
+    <div class="item-meta">
+      ${datePill(item.date)}
+    </div>
 
-    return div
-}
+    <div class="item-notes" ${notes ? '' : 'style="display:none;"'}>
+      <h4>Notes</h4>
+      <p>${DOMPurify.sanitize(notes)}</p>
+      <div class="item-actions">
+        <button class="edit-btn">Edit</button>
+        <button class="delete-btn">Delete</button>
+      </div>
+    </div>
 
-// fetch items from API endpoint and populate the content div
+    <div class="item-actions" ${notes ? 'style="display:none;"' : ''}>
+      <button class="edit-btn">Edit</button>
+      <button class="delete-btn">Delete</button>
+    </div>
+  `;
+
+  div.innerHTML = template;
+
+  div.querySelectorAll('.edit-btn').forEach(btn =>
+    btn.addEventListener('click', () => editItem(item))
+  );
+  div.querySelectorAll('.delete-btn').forEach(btn =>
+    btn.addEventListener('click', () => deleteItem(item.id))
+  );
+
+  return div;
+};
+
+// Apply filters and render visible workouts
+const applyFiltersAndRender = () => {
+  let filtered = [...workouts];
+
+  const typeValue = filterType?.value || 'all';
+  const moodValue = filterMood?.value || 'all';
+
+  if (typeValue !== 'all') {
+    filtered = filtered.filter(w => (w.workoutType || '') === typeValue);
+  }
+
+  if (moodValue !== 'all') {
+    filtered = filtered.filter(w => {
+      const d = getMoodDeltaText(w.moodBefore ?? null, w.moodAfter ?? null);
+      if (!d) return false;
+      if (moodValue === 'positive') return d.type === 'positive';
+      if (moodValue === 'neutral') return d.type === 'neutral';
+      if (moodValue === 'negative') return d.type === 'negative';
+      return true;
+    });
+  }
+
+  // Render
+  if (filtered.length === 0) {
+    contentArea.innerHTML = '<p><i>No workouts match the current filters.</i></p>';
+  } else {
+    contentArea.innerHTML = '';
+    filtered.forEach(item => {
+      const itemDiv = renderItem(item);
+      contentArea.appendChild(itemDiv);
+    });
+  }
+
+  updateSummary(filtered);
+};
+
+// Update summary panel
+const updateSummary = (list) => {
+  const count = list.length;
+  summaryCount.textContent = count || '–';
+
+  if (!count) {
+    summaryDuration.textContent = '–';
+    summaryMood.textContent = '–';
+    return;
+  }
+
+  const totalDuration = list.reduce((sum, w) =>
+    sum + (w.minuteDuration || 0), 0
+  );
+  const avgDuration = totalDuration / count;
+  summaryDuration.textContent = `${Math.round(avgDuration)} min`;
+
+  const deltas = list
+    .map(w => {
+      if (w.moodBefore == null || w.moodAfter == null) return null;
+      return w.moodAfter - w.moodBefore;
+    })
+    .filter(d => d !== null);
+
+  if (deltas.length === 0) {
+    summaryMood.textContent = '–';
+  } else {
+    const totalDelta = deltas.reduce((sum, d) => sum + d, 0);
+    const avgDelta = totalDelta / deltas.length;
+    const sign = avgDelta > 0 ? '+' : '';
+    summaryMood.textContent = `${sign}${avgDelta.toFixed(1)}`;
+  }
+};
+
+// Fetch workouts from API and populate content
 const getData = async () => {
-    try {
-        const response = await fetch('/data')
+  try {
+    const response = await fetch('/data');
 
-        if (response.ok) {
-            readyStatus.style.display = 'block'
-            notReadyStatus.style.display = 'none'
+    if (response.ok) {
+      readyStatus.style.display = 'block';
+      notReadyStatus.style.display = 'none';
 
-            const data = await response.json()
-            console.log('Fetched data:', data)
+      const data = await response.json();
+      console.log('Fetched data:', data);
 
-            if (data.length == 0) {
-                contentArea.innerHTML = '<p><i>No data found in the database.</i></p>'
-                return
-            }
-            else {
-                contentArea.innerHTML = ''
-                data.forEach(item => {
-                    const itemDiv = renderItem(item)
-                    contentArea.appendChild(itemDiv)
-                })
-            }
-        }
-        else {
-            // If the request failed, show the "not ready" status
-            // to inform users that there may be a database connection issue
-            notReadyStatus.style.display = 'block'
-            readyStatus.style.display = 'none'
-            createButton.style.display = 'none'
-            contentArea.style.display = 'none'
-        }
-    } catch (error) {
-        console.error('Error fetching data:', error)
-        notReadyStatus.style.display = 'block'
+      if (!Array.isArray(data) || data.length === 0) {
+        workouts = [];
+        contentArea.innerHTML = '<p><i>No workouts found in the database yet.</i></p>';
+        updateSummary([]);
+        return;
+      }
+
+      // Sort newest first if backend doesn't already
+      workouts = data.slice().sort((a, b) => {
+        if (!a.date || !b.date) return 0;
+        return new Date(b.date) - new Date(a.date);
+      });
+
+      applyFiltersAndRender();
+    } else {
+      notReadyStatus.style.display = 'block';
+      readyStatus.style.display = 'none';
+      createButton.style.display = 'none';
+      contentArea.style.display = 'none';
     }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    notReadyStatus.style.display = 'block';
+  }
+};
+
+// Reset the form title on reset
+myForm.addEventListener('reset', () => {
+  formHeading.textContent = 'Log a Workout';
+});
+
+// Create button: reset + open form
+createButton.addEventListener('click', () => {
+  myForm.reset();
+  formHeading.textContent = 'Log a Workout';
+  formPopover.showPopover();
+});
+
+// Filter controls
+if (filterType) {
+  filterType.addEventListener('change', applyFiltersAndRender);
 }
-
-// Revert to the default form title on reset
-myForm.addEventListener('reset', () => formHeading.textContent = 'Share a Workout Session')
-
-// Reset the form when the create button is clicked. 
-createButton.addEventListener('click', myForm.reset())
+if (filterMood) {
+  filterMood.addEventListener('change', applyFiltersAndRender);
+}
+if (clearFiltersBtn) {
+  clearFiltersBtn.addEventListener('click', () => {
+    if (filterType) filterType.value = 'all';
+    if (filterMood) filterMood.value = 'all';
+    applyFiltersAndRender();
+  });
+}
 
 // Load initial data
-getData()
+getData();
