@@ -115,7 +115,7 @@ const editItem = (data) => {
     })
 
     // Update the heading to indicate edit mode
-    formHeading.textContent = '🐈 Edit Cat'
+    formHeading.textContent = 'Edit Workout'
 
     // Show the popover
     formPopover.showPopover()
@@ -123,7 +123,7 @@ const editItem = (data) => {
 
 // Delete item
 const deleteItem = async (id) => {
-    if (!confirm('Are you sure you want to delete this cat?')) {
+    if (!confirm('Confirm workout deletion?')) {
         return
     }
 
