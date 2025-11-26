@@ -1,3 +1,5 @@
+console.log('script.js loaded');
+
 let readyStatus = document.querySelector('#readyStatus');
 let notReadyStatus = document.querySelector('#notReadyStatus');
 let myForm = document.querySelector('#myForm');
@@ -367,6 +369,7 @@ myForm.addEventListener('reset', () => {
 
 // Create button: reset + open form
 createButton.addEventListener('click', () => {
+    console.log('Create button clicked');
   myForm.reset();
   formHeading.textContent = 'Log a Workout';
   formPopover.showPopover();
