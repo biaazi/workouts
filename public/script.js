@@ -346,7 +346,7 @@ const getData = async () => {
 
       if (!Array.isArray(data) || data.length === 0) {
         workouts = [];
-        contentArea.innerHTML = '<p><i>No workouts found in the database yet.</i></p>';
+        contentArea.innerHTML = '<p><i>No workouts recorded yet.</i></p>';
         updateSummary([]);
         return;
       }
