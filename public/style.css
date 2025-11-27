@@ -508,11 +508,10 @@ select {
 #formPopover {
   max-width: 640px;
   width: 100%;
-  margin: auto;
+  margin: 0;
   padding: 0;
   border: none;
   background: transparent;
-  display: none;
 }
 
 #formPopover::backdrop {

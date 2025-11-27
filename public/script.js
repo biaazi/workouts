@@ -47,16 +47,15 @@ const getFormData = () => {
 myForm.addEventListener('submit', async event => {
   event.preventDefault();
   const data = getFormData();
-  console.log('Form submitted with data:', data);
-
   await saveItem(data);
   myForm.reset();
   formHeading.textContent = 'Log a Workout';
 
-  if (formPopover) {
-    formPopover.style.display = 'none';
+  if (formPopover && typeof formPopover.hidePopover === 'function') {
+    formPopover.hidePopover();
   }
 });
+
 
 
 // Save item (Create or Update)
@@ -378,22 +377,25 @@ myForm.addEventListener('reset', () => {
 
 // Create button: reset + open form
 createButton.addEventListener('click', () => {
-    console.log('Create button clicked');
-    myForm.reset();
-    formHeading.textContent = 'Log a Workout';
-    formPopover.style.display = 'block';
+  console.log('Create button clicked');
+  myForm.reset();
+  formHeading.textContent = 'Log a Workout';
+  // No showPopover() call here, HTML popovertarget handles opening
 });
 
+
+
+
 // Cancel button closes popover
-let cancelButton = myForm.querySelector('.cancel');
 if (cancelButton) {
   cancelButton.addEventListener('click', () => {
     console.log('Cancel clicked');
-    if (formPopover) {
-      formPopover.style.display = 'none';
+    if (formPopover && typeof formPopover.hidePopover === 'function') {
+      formPopover.hidePopover();
     }
   });
 }
+
 
 
 
