@@ -21,7 +21,7 @@
   >
   <link rel="stylesheet" href="style.css" />
 
-  <!-- DOMPurify to prevent XSS when rendering notes -->
+  <!-- DOMPurify to prevent XSS when rendering notes / API text -->
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.3.0/dist/purify.min.js"></script>
 </head>
 
@@ -90,7 +90,7 @@
         </section>
       </aside>
 
-      <!-- RIGHT COLUMN: workouts -->
+      <!-- MIDDLE COLUMN: workouts -->
       <section class="content-column">
         <div class="content-header">
           <div>
@@ -100,8 +100,39 @@
         </div>
 
         <section id="contentArea" class="workout-grid">
-          <!-- workout cards injected here -->
+      
         </section>
+      </section>
+
+      <section class="exercise-column">
+        <div class="panel panel-subdued">
+          <h3>Exercise Explorer</h3>
+          <p class="panel-helper">
+            Search an exercise by name to see type, muscle, difficulty, and instructions.
+          </p>
+
+          <div class="exercise-search-row">
+            <input
+              type="text"
+              id="exerciseSearchInput"
+              placeholder="e.g. lat pulldown, glute kickback, preacher curl"
+              autocomplete="off"
+            />
+            <button id="exerciseSearchBtn" class="secondary-btn">Search</button>
+          </div>
+
+          <p id="exerciseSearchStatus" class="exercise-status"></p>
+
+          <ul id="exerciseResultsList" class="exercise-results">
+          </ul>
+
+          <div id="exerciseDetails" class="exercise-details">
+            <p class="exercise-placeholder">
+              No exercise selected yet. Try searching for something like
+              <strong>lat pulldown</strong> or <strong>glute kickback</strong>.
+            </p>
+          </div>
+        </div>
       </section>
     </main>
 
